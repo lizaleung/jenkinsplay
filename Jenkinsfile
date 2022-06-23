@@ -1,17 +1,37 @@
 pipeline {
     agent any
 
-    stages {
-        stage('Hello') {
+        environment {
+            APP_NAME = 'jenkins-pipeline-demo-api'
+            BUILD_NUMBER = "${env.BUILD_NUMBER}"
+            IMAGE_VERSION="v_${BUILD_NUMBER}"
+        }
+
+        parameters {
+            string(defaultValue: "develop", description: 'Branch Specifier', name: 'SPECIFIER')
+            booleanParam(defaultValue: false, description: 'Deploy to QA Environment ?', name: 'DEPLOY_QA')
+            booleanParam(defaultValue: false, description: 'Deploy to UAT Environment ?', name: 'DEPLOY_UAT')
+            booleanParam(defaultValue: false, description: 'Deploy to PROD Environment ?', name: 'DEPLOY_PROD')
+        }
+
+        stage("Initialize") {
             steps {
-                echo 'Hello World'
-            }
-        },
-        stage('Hello 2') {
-            steps {
-                echo 'Hello World'
+                script {
+                    notifyBuild('STARTED')
+                    echo "${BUILD_NUMBER} - ${env.BUILD_ID} on ${env.JENKINS_URL}"
+                    echo "Branch Specifier :: ${params.SPECIFIER}"
+                    echo "Deploy to QA? :: ${params.DEPLOY_QA}"
+                    echo "Deploy to UAT? :: ${params.DEPLOY_UAT}"
+                    echo "Deploy to PROD? :: ${params.DEPLOY_PROD}"
+                    sh 'rm -rf target/universal/*.zip'
+                }
             }
         }
-    }
+        stage('Checkout') {
+            steps {
+                echo 'Checkout Repo'
+                git branch: "${params.SPECIFIER}", url: "${GIT_URL}"
+            }
+        }
 }
 
